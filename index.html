@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bayerns schenste Goasmaß Turnier</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+<body>
+
+<div class="row">
+    <div class="col-md-5">
+        Wähle deine Musik aus: <input id="files" type="file" name="img" multiple>
+
+        <ul id="allMusic" class="list-group">
+        </ul>
+
+    </div>
+    <div class="col-md-7">
+        <div>
+
+            <button type="button" class="timer btn btn-default" timer="7">Nach 7 Minuten</button>
+            <button type="button" class="timer btn btn-default" timer="9">Nach 9 Minuten</button>
+            <button type="button" class="timer btn btn-default" timer="11">Nach 11 Minuten</button>
+
+        </div>
+        <div>
+            <div id="countdown">00:00</div>
+            <button type="button" class="btn btn-info" id="pause">Pause</button>
+            <button type="button" class="btn btn-info" id="resume">Weiter</button>
+            <button type="button" class="btn btn-info" id="startTimer">Start</button>
+
+        </div>
+        <div id="songTitle"></div>
+        <audio id="musicSource" controls>
+            <source id="mp3Source" type="audio/mp3"/>
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+</div>
+
+<style>
+    .list-group-item {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+
+    $(function () {
+
+
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+
+
+            var actFile;
+
+            var timerTime = null;
+
+            var selectedFile;
+
+            var filesInput = $("#files");
+
+            var filesObjs = [];
+
+            filesInput.on("change", function (e) {
+
+                /* Init */
+                //filesObjs = [];
+                selectedFile;
+                //$('#allMusic').empty();
+
+
+                var files = e.target.files; //FileList object
+                var list = $("#list");
+                console.log(files);
+
+                $.each(files, function (i, file) {
+                    path = window.URL.createObjectURL(file);
+
+                    filesObjs.push(file);
+
+
+                    $('#allMusic').append('<li itemId="' + $("#allMusic li").length + '"class="list-group-item">' + file.name + '</li>');
+                });
+            });
+
+            $('#allMusic').on('click', '.list-group-item', function () {
+
+                $('.list-group-item').css('background-color', 'white');
+                $(this).css('background-color', 'lightgrey');
+                selectedFile = filesObjs[$(this).attr('itemId')];
+                console.log(selectedFile);
+            });
+
+
+            $('.timer').click(function () {
+                $('.timer').removeClass("btn-success");
+                $(this).addClass('btn-success');
+                timerTime = $(this).attr('timer') * 60000;
+                //timerTime = $(this).attr('timer') * 1000;
+            });
+
+            $('#startTimer').click(function () {
+                if (selectedFile != null && timerTime != null) {
+                    $('#musicSource').get(0).pause();
+                    CountDown.Start(timerTime);
+                } else {
+                    alert("Wähle einen Titel aus und setze den Coutndown du Zipfe!");
+                }
+            });
+
+        } else {
+            alert("shit geht ned");
+        }
+
+
+        playMusic = function () {
+            var reader = new FileReader();
+
+            reader.onload = function (event) {
+                the_url = event.target.result;
+
+
+                $('#songTitle').empty();
+                $('#songTitle').append("Aktueller Song: " + selectedFile.name);
+
+                $('#mp3Source').attr('src', the_url);
+
+                $('#musicSource').get(0).load();
+
+                $('#musicSource').get(0).currentTime = 60;
+
+                $('#musicSource').get(0).play();
+
+            };
+            //when the file is read it triggers the onload event above.
+            reader.readAsDataURL(selectedFile);
+        };
+
+
+
+        var CountDown = (function ($) {
+            // Length ms
+            var TimeOut = 10000;
+            // Interval ms
+            var TimeGap = 1000;
+
+            var CurrentTime = ( new Date() ).getTime();
+            var EndTime = ( new Date() ).getTime() + TimeOut;
+
+            var GuiTimer = $('#countdown');
+            var GuiPause = $('#pause');
+            var GuiResume = $('#resume').hide();
+
+            var Running = true;
+
+            var UpdateTimer = function() {
+                // Run till timeout
+                if( CurrentTime + TimeGap < EndTime ) {
+                    setTimeout( UpdateTimer, TimeGap );
+                }
+                // Countdown if running
+                if( Running ) {
+                    CurrentTime += TimeGap;
+                    if( CurrentTime >= EndTime ) {
+                        playMusic();
+                    }
+                }
+                // Update Gui
+                var Time = new Date();
+                Time.setTime( EndTime - CurrentTime );
+                var Minutes = Time.getMinutes();
+                var Seconds = Time.getSeconds();
+
+                GuiTimer.html(
+                    (Minutes < 10 ? '0' : '') + Minutes
+                    + ':'
+                    + (Seconds < 10 ? '0' : '') + Seconds );
+            };
+
+            var Pause = function() {
+
+                Running = false;
+                GuiPause.hide();
+                GuiResume.show();
+            };
+
+            var Resume = function() {
+                Running = true;
+                GuiPause.show();
+                GuiResume.hide();
+            };
+
+            var Start = function( Timeout ) {
+                TimeOut = Timeout;
+                CurrentTime = ( new Date() ).getTime();
+                EndTime = ( new Date() ).getTime() + TimeOut;
+                UpdateTimer();
+            };
+
+            return {
+                Pause: Pause,
+                Resume: Resume,
+                Start: Start
+            };
+        })(jQuery);
+
+        jQuery('#pause').on('click',CountDown.Pause);
+        jQuery('#resume').on('click',CountDown.Resume);
+
+
+    });
+
+</script>
+
+</body>
+</html>
